@@ -1,0 +1,40 @@
+{
+  "name": "rxjs-pointfree",
+  "version": "0.1.0",
+  "description": "Damjan Vujnovic's Pointless or Pointfree examples translated into reusable RxJS 7.8.2 pipelines.",
+  "type": "module",
+  "license": "MIT",
+  "private": true,
+  "author": "Hans Schenker",
+  "contributors": [
+    { "name": "Hans Schenker", "url": "https://github.com/hansschenker" },
+    { "name": "ChatGPT GPT-6 Astra Pro (OpenAI), main implementation contributor and AI co-author", "url": "https://openai.com/" }
+  ],
+  "repository": { "type": "git", "url": "git+https://github.com/hansschenker/rxjs-pointfree.git" },
+  "keywords": ["rxjs", "point-free", "functional-programming", "typescript", "teaching"],
+  "engines": { "node": ">=22" },
+  "main": "./dist/index.js",
+  "types": "./dist/index.d.ts",
+  "exports": { ".": { "types": "./dist/index.d.ts", "import": "./dist/index.js" } },
+  "sideEffects": false,
+  "scripts": {
+    "typecheck": "tsc --noEmit -p tsconfig.json",
+    "test": "vitest run",
+    "test:watch": "vitest",
+    "build": "tsc -p tsconfig.build.json",
+    "check": "npm run typecheck && npm test && npm run build",
+    "examples": "npm run example:basics && npm run example:debt && npm run example:snapshots && npm run example:effects",
+    "example:basics": "node --import tsx examples/01-basics.ts",
+    "example:debt": "node --import tsx examples/02-debt.ts",
+    "example:snapshots": "node --import tsx examples/03-snapshots.ts",
+    "example:effects": "node --import tsx examples/04-effects.ts"
+  },
+  "dependencies": { "rxjs": "7.8.2" },
+  "devDependencies": {
+    "@types/node": "22.20.5",
+    "fast-check": "4.10.2",
+    "tsx": "4.23.15",
+    "typescript": "5.9.3",
+    "vitest": "3.2.7"
+  }
+}

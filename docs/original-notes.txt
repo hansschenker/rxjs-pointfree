@@ -1,0 +1,455 @@
+WHAT WOULD PROGRAMMING WITHOUT
+FUNCTION KEYWORD (OR =>) LOOK LIKE?
+
+Tacit programming, also called point-free style, is a programming
+paradigm in which function definitions do not identify the arguments (or
+"points") on which they operate.
+
+const getNames = function (people) {
+return people.map(function (person) {
+return person. name;
+});
+
+const getNames = ps => ps.map(p=>p.name);
+
+--- better like this
+
+const f = filter(compose(gt(0), pick('balance'), pick('account'))
+
+aman/dc-2019/8/6
+
+TASK AHEAD
+
+Given an array of people, find the total amount owed by the adults with
+the overdrawn account.
+
+const people = [
+{ name: "Ali", age: 12, account: { balance: -1.0 } },
+{ name: "Bob", age: 23, account: { balance: -2.0 } },
+{ name: "Car", age: 34, account: { balance: 30.0 } },
+{ name: "Dan", age: 45, account: { balance: -4.0 } },
+{ name: "Eve", age: 56, account: { balance: 50.0 } }
+
+
+POINT-FULL SOLUTIONS
+
+function calcIndebtedAdultsTotalDebt(people) {
+let result = 0;
+for (let i=0; i < people.length; i++) {
+const person = people[i];
+if (person.age >= 18 && person.account.balance < 0) {
+result -= person.account.balance;
+
+}
+
+return result;
+
+}
+
+
+// functional style
+
+const calcIndebtedAdultsTotalDebt =
+people => people.filter(person => person.age >= 18)
+                .filter(person => person.account.balance < 0)
+                .map(person => person.account.balance)
+                .reduce((acc, balance) => acc - balance, 0);
+
+
+// how to not use the function keyword, start with small Problems
+
+HOW TO SOLVE IT?
+
+Solve the simpler problem(s) first!
+
+const getAge = person => person.age;
+
+// cheating
+const FP = {
+getAge: person => person.age
+};
+
+const getAge = person => FP.getAge(person) ;//
+
+const getAge = FP.getAge
+
+
+RULE 1: ELIMINATE POINTLESS CODE
+
+const f = x => 2 * x * x+3 * x+1;
+const g = x=> f(x);//
+const g = f
+
+x => f(x) can mechanically be replaced with just f // Eta conversion - saving kittens since 1930
+                                                   // one transformation inside the Lambda Calculus
+
+SURPRISINGLY, IT HAPPENS A LOT
+
+  const useMount = (fn) => {
+    useEffectOnce(()=>{
+  fn();
+});
+
+const useMount = (fn) => { useEffectOnce(fn) };
+
+const useMount =  useEffectOnce;
+
+--------  BACK TO OUR PROBLEM ...
+
+const FP = {
+getAge: person => person.age,
+getBalance: account => account.balance
+}
+
+const getAge = FP.getAge;
+const getBalance = FP.getBalance;
+
+------ create a function instead of using properties
+const FP = {
+getAge: person => person.age,
+getBalance: account => account.balance
+
+const getAge = FP.getAge;
+const getBalance = FP.getBalance;
+
+const FP = {
+  // a factory function (higher-order function, combinator function)
+  pick: function (propName) {
+  return object => object[propName ] ;
+}
+
+const getAge = FP.pick('age');
+const getBalance = FP.pick('balance');
+
+
+const getAge = person => FP.pick('age')(person) ;//
+const getBalance = acc => FP.pick('balance') (acc) ;//
+
+---------- more idiomatic
+const FP = {
+  pick: propName => obj => obj[propName]
+}
+
+const getAge = FP.pick('age');
+const getBalance = FP.pick('balance');
+
+FIRST DISCOVERY - CURRIED FUNCTIONS, one Parameter at one time
+
+const pick = propName => obj => obj[propName] ;
+
+const getName = pick('name');
+getName({name: 'First', age: 23});
+
+Data (object) comes last (unlike 'classical' OOP where data comes first).
+
+// if data is last the function can be used for more than one fixed data
+// makes functions reusable among different data Domain
+// Behavior first and then Data Object
+
+-----   INVENTED VS. DISCOVERED , OOP has construction and invocation
+                     FP is discovered             FP has as many as you wish
+
+class AuthService {
+constructor(endpoint) {
+this.endpoint = endpoint;
+
+login(username, password) {
+  return fetch(
+    this.endpoint,
+    { body: JSON.stringify({ username, password }) 
+  );
+ }
+
+}
+
+// curried
+const login = endpoint => (username, password) =>
+fetch(
+endpoint,
+{ body: JSON.stringify({ username, password }) }
+
+);
+
+
+SOME MORE EXAMPLES
+-------------------------------------------------------
+
+const FP.add = a => b => a + b;
+const inc = FP.add(1);//b => 1 + b
+const dec = FP.add(-1);//b => 1 - b
+
+const FP.lt = a => b => b < a; // lt lower than
+const isNegative = FP.lt(0); //b => b < 0
+
+const FP.flip = f => a =>b=>f(b)(a);
+const gt = FP.flip(lt);//b => a =>b<a
+
+----------- ARRAYS - MAP
+
+const getAges = people => people.map(p=>p.age);
+
+const getAges = people => people.map(FP.pick('age'));
+
+// take Data Object first
+FP.map = f = > xs => xs.map(f);
+
+const getAges = ps => FP.map(FP.pick('age'))(ps);//
+
+// point free version with eta-reduction
+const getAges = FP.map(FP.pick('age'));//
+const getAges = FP.map(FP.pick('name'));//
+
+// new function from combinign pick with map
+
+
+
+ARRAYS FILTER
+-------------------------------------------------------
+const findNegatives = ns => ns.filter(n =>n<0);
+
+const findNegatives = ns => ns.filter(FP.1t(0));
+
+FP.filter = f => xs =>xs.filter(f);
+
+const findNegatives = ns => FP.filter(FP.1t(0))(ns);//
+
+const findNegatives = FP.filter(FP.1t(0));
+
+
+ARRAYS - REDUCE
+---------------------------------------------------------
+
+const sum = ns => ns.reduce((acc, n) => acc +n, 0);
+
+FP.reduce = (f, initialValue) =>
+xs => xs.reduce((acc, x) =>f(acc)(x), initialvalue);
+
+const sum = FP.reduce(FP.add, 10);
+
+// monoids all functions have a neutral elment, 1,false, true, infinity
+const product = FP.reduce(FP.mul, 1);
+const any = FP.reduce(FP.or, false);
+const all = FP.reduce(FP.and, true);
+const min = FP.reduce(FP.min, Infinity);
+const max = FP.reduce(FP.max, -Infinity);
+
+
+A NEW KIND OF PROBLEM
+----------------------------------------------------------------
+
+const getAccountBalance =
+person => person.account.balance;
+
+const getAccountBalance = person => {
+const account = getAccount (person);
+return getBalance(account);
+
+};
+
+const getAccountBalance =
+  person => getBalance(getAccount(person));
+
+// pattern: we have a function and a neutral value for that Operation
+//          and then we combine that using the reduce 
+//          then we can apply that function onto all elements
+
+const getAccountBalance =
+((f, g) => p => f(g(p))) (getBalance, getAccount);
+
+FP.compose2= (f, g)=>x=f(g(x));
+const getAccountBalance =
+  FP.compose2(getBalance, getAccount);
+
+const f5= x => {
+
+NEW DISCOVERY - FUNCTIONAL COMPOSITION
+-------------------------------------------------------------------
+
+const f5 = x => {
+const r1= f1(x);
+const r2= f2(r1);
+const r3= f3(r2);
+const r4 = f4(r3);
+return r4;
+}
+
+const f5 = x => f4 ( f3 ( f2 (f1 (x) ) ) );
+
+FP.compose = ( ... fns) =>
+  x => fns.reduceRight((acc, f)=>f(acc), x);
+
+const f5= FP.compose(f4,f3,f2,f1);
+
+host/-damjan/ndc-2019/#/21
+
+BEWARE!
+------------------------------------
+const f5=x=> f4(f3(f2(f1(x))));
+
+Is same as:
+
+const f5= FP.compose(f4,f3,f2,f1);
+
+But:
+------
+const f6 = x => f4(f3)(f2)(f1)(x);//
+
+Is same as:
+
+const f6 = f4(f3)(f2)(f1);
+
+
+SOME MORE EXAMPLES
+--------------------------------------------------
+
+const isAdult = person => person.age >= 18;
+
+const isAdult = person => FP.not(
+FP.1t(18)(
+FP.pick('age') (person)
+
+)
+
+);
+
+const isAdult = FP.compose(
+ FP.not, FP.lt(18), FP.pick('age')
+);
+
+// compose from right to left
+const isInDebt = FP.compose (
+FP.1t(0), FP.pick('balance'), FP.pick('account')
+);
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
+
